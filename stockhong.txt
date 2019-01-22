@@ -1,0 +1,52 @@
+Function FillOneRow(url As String, r As Integer) As Integer
+    With CreateObject("msxml2.xmlhttp")
+        .Open "GET", url, False
+        .send
+        Dim data As String
+        data = Mid(.responsetext, 22, Len(.responsetext))
+        sp = Split(data, ",")
+        If UBound(sp) > 3 Then
+            FillOneRow = 1
+            Cells(r, 2).Value = sp(0) '名称
+            Cells(r, 3).Value = sp(3) '当前价格
+            Cells(r, 4).Value = sp(2) '昨日收盘价
+            Dim zhangDie As Double
+            zhangDie = (Cells(r, 3) - Cells(r, 4)) / Cells(r, 4) * 100
+            Cells(r, 5).Value = zhangDie
+            If zhangDie > 0 Then
+                '上涨使用红色
+                Cells(r, 5).Font.Color = vbRed
+                Cells(r, 3).Font.Color = vbRed
+            Else
+                '下跌使用绿色
+                Cells(r, 5).Font.Color = &H228B22
+                Cells(r, 3).Font.Color = &H228B22
+            End If
+        Else
+            FillOneRow = 0
+        End If
+    End With
+End Function
+ 
+Sub GetData()
+    Dim succeeded As Integer
+    Dim url As String
+    Dim row As Integer
+    Dim code As String
+    For row = 2 To Range("A1").CurrentRegion.Rows.Count '从第二行开始
+        code = Cells(row, 1).Value
+        If code <> "" Then
+            url = "http://hq.sinajs.cn/list=sh" & code '沪市
+            succeeded = FillOneRow(url, row)
+            
+            If succeeded = 0 Then
+                url = "http://hq.sinajs.cn/list=sz" & code '深市
+                succeeded = FillOneRow(url, row)
+            End If
+            
+            If succeeded = 0 Then
+                MsgBox ("获取失败")
+            End If
+        End If
+    Next
+End Sub
